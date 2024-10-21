@@ -44,7 +44,7 @@ def get_latest_versions(browser):
 
     return {
         'beta_versions': beta_versions,
-        'stable_versions': stable_versions
+        'stable_versions': stable_versions,
         'dev_versions' : dev_versions
     }
 
