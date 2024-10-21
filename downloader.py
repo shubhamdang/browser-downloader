@@ -149,6 +149,8 @@ for version in firefox_versions_list:
 
 delete_directory(new_firefox_folder)
 
+beta_version = '.'.join(edge_versions['beta_versions'][0].split('.')[:2])
+edge_versions_list.append(beta_version)
 
 for version in edge_versions_list:
     #Download Edge browser
@@ -166,5 +168,9 @@ for version in edge_versions_list:
     #Unzip Edge browser
     zip_path = os.path.join(new_edge_folder, f"Edge+{version}.zip")
     unzip_file(zip_path, edge_folder)
+
+    # Handling for dev and beta 
+    os.rename(f"{edge_drivers_folder}\\{beta_version}", f"{edge_drivers_folder}\\beta")
+    os.rename(f"{edge_folder}\\{beta_version}", f"{edge_folder}\\beta")
 
 delete_directory(new_edge_folder)
