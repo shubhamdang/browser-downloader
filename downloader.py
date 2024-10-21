@@ -170,7 +170,7 @@ for version in edge_versions_list:
     unzip_file(zip_path, edge_folder)
 
     # Handling for dev and beta 
-    os.rename(f"{edge_drivers_folder}\\{beta_version}", f"{edge_drivers_folder}\\beta")
+    os.rename(f'{edge_drivers_folder}\\{beta_version}', f'{edge_drivers_folder}\\beta)
     os.rename(f"{edge_folder}\\{beta_version}", f"{edge_folder}\\beta")
 
 delete_directory(new_edge_folder)
