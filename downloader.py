@@ -73,28 +73,14 @@ def download_file(url, dest):
         return None
 
 # Function to unzip a file
-def unzip_file(src, dest, rename_file=None):
+def unzip_file(src, dest):
     try:
         with zipfile.ZipFile(src, 'r') as zip_ref:
-            # Extract all files to the destination
             zip_ref.extractall(dest)
-
-            # Rename the extracted file, if 'rename_file' is provided
-            if rename_file:
-                for file_name in zip_ref.namelist():
-                    extracted_path = os.path.join(dest, file_name)
-                    new_file_path = os.path.join(dest, rename_file)
-
-                    # If the renamed file already exists, delete it first
-                    if os.path.exists(new_file_path):
-                        os.remove(new_file_path)
-
-                    # Rename the extracted file to the provided destination file name
-                    os.rename(extracted_path, new_file_path)
-
-        print(f"Extracted {src} to {dest} and renamed to {rename_file}")
+        print(f"Extracted {src} to {dest}")
     except zipfile.BadZipFile:
         print(f"Error unzipping {src}")
+
 
 # Function to delete files or directories
 def delete_directory(path):
