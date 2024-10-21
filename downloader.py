@@ -69,11 +69,26 @@ def download_file(url, dest):
         return None
 
 # Function to unzip a file
-def unzip_file(src, dest):
+def unzip_file(src, dest, rename_file=None):
     try:
         with zipfile.ZipFile(src, 'r') as zip_ref:
+            # Extract all files to the destination
             zip_ref.extractall(dest)
-        print(f"Extracted {src} to {dest}")
+
+            # Rename the extracted file, if 'rename_file' is provided
+            if rename_file:
+                for file_name in zip_ref.namelist():
+                    extracted_path = os.path.join(dest, file_name)
+                    new_file_path = os.path.join(dest, rename_file)
+
+                    # If the renamed file already exists, delete it first
+                    if os.path.exists(new_file_path):
+                        os.remove(new_file_path)
+
+                    # Rename the extracted file to the provided destination file name
+                    os.rename(extracted_path, new_file_path)
+
+        print(f"Extracted {src} to {dest} and renamed to {rename_file}")
     except zipfile.BadZipFile:
         print(f"Error unzipping {src}")
 
@@ -169,8 +184,15 @@ for version in edge_versions_list:
     zip_path = os.path.join(new_edge_folder, f"Edge+{version}.zip")
     unzip_file(zip_path, edge_folder)
 
-    # Handling for dev and beta 
-    os.rename(f'{edge_drivers_folder}\\{beta_version}', f'{edge_drivers_folder}\\beta')
-    os.rename(f'{edge_folder}\\{beta_version}", f"{edge_folder}\\beta')
+ # Handling for dev and beta 
+if os.path.exists(f'{edge_drivers_folder}\\beta'):
+    delete_directory(f'{edge_drivers_folder}\\beta')
+    
+if os.path.exists(f'{edge_folder}\\beta'):
+    delete_directory(f'{edge_folder}\\beta')
+    
+os.rename(f'{edge_drivers_folder}\\{beta_version}', f'{edge_drivers_folder}\\beta')
+
+os.rename(f'{edge_folder}\\Edge {beta_version}', f'{edge_folder}\\beta')
 
 delete_directory(new_edge_folder)
