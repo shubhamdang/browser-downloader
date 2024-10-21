@@ -242,8 +242,8 @@ if os.path.exists(f'{edge_drivers_folder}\\dev'):
 if os.path.exists(f'{edge_folder}\\dev'):
     delete_directory(f'{edge_folder}\\dev')
     
-os.rename(f'{edge_drivers_folder}\\{beta_version}', f'{edge_drivers_folder}\\dev')
+os.rename(f'{edge_drivers_folder}\\{dev_version}', f'{edge_drivers_folder}\\dev')
 
-os.rename(f'{edge_folder}\\Edge {beta_version}', f'{edge_folder}\\dev')
+os.rename(f'{edge_folder}\\Edge {dev_version}', f'{edge_folder}\\dev')
 
 delete_directory(new_edge_folder)
