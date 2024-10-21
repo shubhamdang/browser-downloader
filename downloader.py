@@ -31,6 +31,7 @@ def get_latest_versions(browser):
     data = fetch_versions(browser, detected_os_version)
     beta_versions = []
     stable_versions = []
+    dev_versions = []
 
     # Iterate through the versions and extract the latest 10 for beta and stable
     for version in data['versions']:
@@ -38,10 +39,13 @@ def get_latest_versions(browser):
             beta_versions.append(version['version'])
         elif version['channel_type'] == 'stable' and len(stable_versions) < 10:
             stable_versions.append(version['version'])
+        elif version['channel_type'] == 'dev' and len(dev_versions) < 10:
+            dev_versions.append(version['version'])
 
     return {
         'beta_versions': beta_versions,
         'stable_versions': stable_versions
+        'dev_versions' : dev_versions
     }
 
 
@@ -164,9 +168,6 @@ for version in firefox_versions_list:
 
 delete_directory(new_firefox_folder)
 
-beta_version = '.'.join(edge_versions['beta_versions'][0].split('.')[:2])
-edge_versions_list.append(beta_version)
-
 for version in edge_versions_list:
     #Download Edge browser
     url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/Edge+{version}.zip"
@@ -184,7 +185,29 @@ for version in edge_versions_list:
     zip_path = os.path.join(new_edge_folder, f"Edge+{version}.zip")
     unzip_file(zip_path, edge_folder)
 
- # Handling for dev and beta 
+
+
+# Handling for dev and beta 
+beta_version = edge_versions['beta_versions'][0]
+dev_version = edge_versions['dev_versions'][0]
+
+#beta 
+url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/beta/Edge+{beta_version}.zip"
+download_file(url, new_edge_folder)
+
+# Download Edge drivers
+url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/beta/{beta_version}.zip"
+download_file(url, new_edge_folder)
+
+#Unzip Edge drivers
+zip_path = os.path.join(new_edge_folder, f"{beta_version}.zip")
+unzip_file(zip_path, edge_drivers_folder)
+
+#Unzip Edge browser
+zip_path = os.path.join(new_edge_folder, f"Edge+{beta_version}.zip")
+unzip_file(zip_path, edge_folder)
+
+
 if os.path.exists(f'{edge_drivers_folder}\\beta'):
     delete_directory(f'{edge_drivers_folder}\\beta')
     
@@ -194,5 +217,33 @@ if os.path.exists(f'{edge_folder}\\beta'):
 os.rename(f'{edge_drivers_folder}\\{beta_version}', f'{edge_drivers_folder}\\beta')
 
 os.rename(f'{edge_folder}\\Edge {beta_version}', f'{edge_folder}\\beta')
+
+
+#dev
+url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/dev/Edge+{dev_version}.zip"
+download_file(url, new_edge_folder)
+
+# Download Edge drivers
+url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/dev/{dev_version}.zip"
+download_file(url, new_edge_folder)
+
+#Unzip Edge drivers
+zip_path = os.path.join(new_edge_folder, f"{dev_version}.zip")
+unzip_file(zip_path, edge_drivers_folder)
+
+#Unzip Edge browser
+zip_path = os.path.join(new_edge_folder, f"Edge+{dev_version}.zip")
+unzip_file(zip_path, edge_folder)
+
+
+if os.path.exists(f'{edge_drivers_folder}\\dev'):
+    delete_directory(f'{edge_drivers_folder}\\dev')
+    
+if os.path.exists(f'{edge_folder}\\dev'):
+    delete_directory(f'{edge_folder}\\dev')
+    
+os.rename(f'{edge_drivers_folder}\\{beta_version}', f'{edge_drivers_folder}\\dev')
+
+os.rename(f'{edge_folder}\\Edge {beta_version}', f'{edge_folder}\\dev')
 
 delete_directory(new_edge_folder)
