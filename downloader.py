@@ -120,6 +120,13 @@ edge_folder = "C:\\Program Files (x86)\\Microsoft\\EdgeCore"
 new_edge_folder = "G:\\New_browser_edge\\"
 edge_drivers_folder = "G:\\drivers\\edge"
 
+
+delete_directory(chrome_folder)
+delete_directory(chrome_drivers_folder)
+delete_directory(firefox_folder)
+delete_directory(edge_folder)
+delete_directory(edge_drivers_folder)
+
 # 1. Create directories for Chrome and Firefox
 create_directories([chrome_folder, new_chrome_folder, firefox_folder, new_firefox_folder, edge_folder, new_edge_folder, edge_drivers_folder])
 
