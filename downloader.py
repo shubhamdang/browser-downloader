@@ -35,11 +35,11 @@ def get_latest_versions(browser):
 
     # Iterate through the versions and extract the latest 10 for beta and stable
     for version in data['versions']:
-        if version['channel_type'] == 'beta' and len(beta_versions) < 10:
+        if version['channel_type'] == 'beta' and len(beta_versions) < 5:
             beta_versions.append(version['version'])
-        elif version['channel_type'] == 'stable' and len(stable_versions) < 10:
+        elif version['channel_type'] == 'stable' and len(stable_versions) < 5:
             stable_versions.append(version['version'])
-        elif version['channel_type'] == 'dev' and len(dev_versions) < 10:
+        elif version['channel_type'] == 'dev' and len(dev_versions) < 5:
             dev_versions.append(version['version'])
 
     return {
