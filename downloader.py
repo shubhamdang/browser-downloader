@@ -2,10 +2,8 @@ import os
 import requests
 import shutil
 import zipfile
-
-
-import requests
 import platform
+import argparse
 
 def get_windows_version():
     version = platform.system()
@@ -17,23 +15,33 @@ def get_windows_version():
             return 'win11'
     return None
 
-def fetch_versions(browser, os):
-    url = f"https://stage-api.lambdatestinternal.com/api/v2/capability?grid=selenium&browser={browser}&os={os}"
+# Determine the correct API URL based on branch
+def get_api_url(browser, os, branch):
+    if branch == 'prod':
+        return f"https://api.lambdatest.com/api/v2/capability?grid=selenium&browser={browser}&os={os}"
+    elif branch == 'stage':
+        return f"https://stage-api.lambdatestinternal.com/api/v2/capability?grid=selenium&browser={browser}&os={os}"
+    else:
+        # For any other branch, default to stage URL
+        return f"https://stage-api.lambdatestinternal.com/api/v2/capability?grid=selenium&browser={browser}&os={os}"
+
+def fetch_versions(browser, os, branch):
+    url = get_api_url(browser, os, branch)
     response = requests.get(url)
     return response.json()
 
-def get_latest_versions(browser):
+def get_latest_versions(browser, branch):
     detected_os_version = get_windows_version()
     if detected_os_version is None:
         print("Not running on Windows")
         return None
 
-    data = fetch_versions(browser, detected_os_version)
+    data = fetch_versions(browser, detected_os_version, branch)
     beta_versions = []
     stable_versions = []
     dev_versions = []
 
-    # Iterate through the versions and extract the latest 10 for beta and stable
+    # Iterate through the versions and extract the latest 5 for each category
     for version in data['versions']:
         if version['channel_type'] == 'beta' and len(beta_versions) < 5:
             beta_versions.append(version['version'])
@@ -47,7 +55,6 @@ def get_latest_versions(browser):
         'stable_versions': stable_versions,
         'dev_versions' : dev_versions
     }
-
 
 # Function to create directories if they don't exist
 def create_directories(directories):
@@ -81,7 +88,6 @@ def unzip_file(src, dest):
     except zipfile.BadZipFile:
         print(f"Error unzipping {src}")
 
-
 # Function to delete files or directories
 def delete_directory(path):
     try:
@@ -92,151 +98,104 @@ def delete_directory(path):
     except Exception as e:
         print(f"Error deleting {path}: {e}")
 
-# Chrome and Firefox configuration
+# Main execution logic
+def main(branch):
+    chrome_versions = get_latest_versions('chrome', branch)
+    edge_versions = get_latest_versions('edge', branch)
+    firefox_versions = get_latest_versions('firefox', branch)
 
-chrome_versions = get_latest_versions('chrome')
-edge_versions = get_latest_versions('edge')
-firefox_versions = get_latest_versions('firefox')
+    chrome_versions_list = chrome_versions['stable_versions']
+    edge_versions_list = edge_versions['stable_versions']
+    firefox_versions_list = firefox_versions['stable_versions']
 
-# chrome_versions_list = chrome_versions['beta_versions'] + chrome_versions['stable_versions']
-# edge_versions_list = edge_versions['beta_versions'] + edge_versions['stable_versions']
-# firefox_versions_list = firefox_versions['beta_versions'] + firefox_versions['stable_versions']
+    # Directories for Chrome, Firefox, and Edge
+    chrome_folder = "G:\\chrome\\"
+    new_chrome_folder = "G:\\New_chrome_browser\\"
+    chrome_drivers_folder = "G:\\drivers\\Chrome\\"
 
-chrome_versions_list =  chrome_versions['stable_versions']
-edge_versions_list =  edge_versions['stable_versions']
-firefox_versions_list =  firefox_versions['stable_versions']
+    firefox_folder = "G:\\firefox\\"
+    new_firefox_folder = "G:\\New_browser_firefox\\"
 
-# Directories for Chrome
-chrome_folder = "G:\\chrome\\"
-new_chrome_folder = "G:\\New_chrome_browser\\"
-chrome_drivers_folder = "G:\\drivers\\Chrome\\"
+    edge_folder = "C:\\Program Files (x86)\\Microsoft\\EdgeCore"
+    new_edge_folder = "G:\\New_browser_edge\\"
+    edge_drivers_folder = "G:\\drivers\\edge"
 
-# Directories for Firefox
-firefox_folder = "G:\\firefox\\"
-new_firefox_folder = "G:\\New_browser_firefox\\"
+    # Deleting old directories
+    delete_directory(chrome_folder)
+    delete_directory(chrome_drivers_folder)
+    delete_directory(firefox_folder)
+    delete_directory(edge_folder)
+    delete_directory(edge_drivers_folder)
 
-# Directories for Edge
-edge_folder = "C:\\Program Files (x86)\\Microsoft\\EdgeCore"
-new_edge_folder = "G:\\New_browser_edge\\"
-edge_drivers_folder = "G:\\drivers\\edge"
+    # Create necessary directories
+    create_directories([chrome_folder, new_chrome_folder, firefox_folder, new_firefox_folder, edge_folder, new_edge_folder, edge_drivers_folder])
 
+    # Download and unzip Chrome versions
+    for version in chrome_versions_list:
+        url = f"https://ltbrowserdeploy.lambdatest.com/windows/chrome/Google+Chrome+{version}.zip"
+        download_file(url, new_chrome_folder)
 
-delete_directory(chrome_folder)
-delete_directory(chrome_drivers_folder)
-delete_directory(firefox_folder)
-delete_directory(edge_folder)
-delete_directory(edge_drivers_folder)
+        url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Chrome/{version}.zip"
+        download_file(url, new_chrome_folder)
 
-# 1. Create directories for Chrome and Firefox
-create_directories([chrome_folder, new_chrome_folder, firefox_folder, new_firefox_folder, edge_folder, new_edge_folder, edge_drivers_folder])
+        unzip_file(os.path.join(new_chrome_folder, f"{version}.zip"), chrome_drivers_folder)
+        unzip_file(os.path.join(new_chrome_folder, f"Google+Chrome+{version}.zip"), chrome_folder)
 
+    delete_directory(new_chrome_folder)
 
-for version in chrome_versions_list:
-    #Download Chrome browser
-    url = f"https://ltbrowserdeploy.lambdatest.com/windows/chrome/Google+Chrome+{version}.zip"
-    download_file(url, new_chrome_folder)
+    # Download and unzip Firefox versions
+    for version in firefox_versions_list:
+        url = f"https://ltbrowserdeploy.lambdatest.com/windows/firefox/{version}.zip"
+        download_file(url, new_firefox_folder)
+        unzip_file(os.path.join(new_firefox_folder, f"{version}.zip"), firefox_folder)
 
-    # Download Chrome drivers
-    url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Chrome/{version}.zip"
-    download_file(url, new_chrome_folder)
+    delete_directory(new_firefox_folder)
 
-    #Unzip Chrome drivers
-    zip_path = os.path.join(new_chrome_folder, f"{version}.zip")
-    unzip_file(zip_path, chrome_drivers_folder)
+    # Download and unzip Edge versions
+    for version in edge_versions_list:
+        url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/Edge+{version}.zip"
+        download_file(url, new_edge_folder)
 
-    #Unzip Chrome browser
-    zip_path = os.path.join(new_chrome_folder, f"Google+Chrome+{version}.zip")
-    unzip_file(zip_path, chrome_folder)
+        url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/{version}.zip"
+        download_file(url, new_edge_folder)
 
-delete_directory(new_chrome_folder)
+        unzip_file(os.path.join(new_edge_folder, f"{version}.zip"), edge_drivers_folder)
+        unzip_file(os.path.join(new_edge_folder, f"Edge+{version}.zip"), edge_folder)
 
+    # Handle Edge beta and dev versions
+    handle_edge_versions(edge_versions['beta_versions'][0], 'beta', new_edge_folder, edge_drivers_folder, edge_folder)
+    handle_edge_versions(edge_versions['dev_versions'][0], 'dev', new_edge_folder, edge_drivers_folder, edge_folder)
 
-# 6. Download Firefox browser
-for version in firefox_versions_list:
-    url = f"https://ltbrowserdeploy.lambdatest.com/windows/firefox/{version}.zip"
-    download_file(url, new_firefox_folder)
+    delete_directory(new_edge_folder)
 
-    zip_path = os.path.join(new_firefox_folder, f"{version}.zip")
-    unzip_file(zip_path, firefox_folder)
-
-delete_directory(new_firefox_folder)
-
-for version in edge_versions_list:
-    #Download Edge browser
-    url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/Edge+{version}.zip"
+# Function to handle Edge beta and dev versions
+def handle_edge_versions(version, version_type, new_edge_folder, edge_drivers_folder, edge_folder):
+    url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/{version_type}/Edge+{version}.zip"
     download_file(url, new_edge_folder)
 
-    # Download Edge drivers
-    url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/{version}.zip"
+    url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/{version_type}/{version}.zip"
     download_file(url, new_edge_folder)
 
-    #Unzip Edge drivers
-    zip_path = os.path.join(new_edge_folder, f"{version}.zip")
-    unzip_file(zip_path, edge_drivers_folder)
+    unzip_file(os.path.join(new_edge_folder, f"{version}.zip"), edge_drivers_folder)
+    unzip_file(os.path.join(new_edge_folder, f"Edge+{version}.zip"), edge_folder)
 
-    #Unzip Edge browser
-    zip_path = os.path.join(new_edge_folder, f"Edge+{version}.zip")
-    unzip_file(zip_path, edge_folder)
+    if os.path.exists(f'{edge_drivers_folder}\\{version_type}'):
+        delete_directory(f'{edge_drivers_folder}\\{version_type}')
 
+    if os.path.exists(f'{edge_folder}\\{version_type}'):
+        delete_directory(f'{edge_folder}\\{version_type}')
 
+    os.rename(f'{edge_drivers_folder}\\{version}', f'{edge_drivers_folder}\\{version_type}')
+    os.rename(f'{edge_folder}\\Edge {version}', f'{edge_folder}\\{version_type}')
 
-# Handling for dev and beta 
-beta_version = edge_versions['beta_versions'][0]
-dev_version = edge_versions['dev_versions'][0]
-
-#beta 
-url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/beta/Edge+{beta_version}.zip"
-download_file(url, new_edge_folder)
-
-# Download Edge drivers
-url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/beta/{beta_version}.zip"
-download_file(url, new_edge_folder)
-
-#Unzip Edge drivers
-zip_path = os.path.join(new_edge_folder, f"{beta_version}.zip")
-unzip_file(zip_path, edge_drivers_folder)
-
-#Unzip Edge browser
-zip_path = os.path.join(new_edge_folder, f"Edge+{beta_version}.zip")
-unzip_file(zip_path, edge_folder)
-
-
-if os.path.exists(f'{edge_drivers_folder}\\beta'):
-    delete_directory(f'{edge_drivers_folder}\\beta')
+# Entry point
+if __name__ == "__main__":
+    # Set up argument parser to get branch from command line
+    parser = argparse.ArgumentParser(description="Download and configure browser versions.")
+    parser.add_argument('--branch', type=str, required=True, help='Branch to use (e.g. prod, stage, or other)')
     
-if os.path.exists(f'{edge_folder}\\beta'):
-    delete_directory(f'{edge_folder}\\beta')
+    # Parse the arguments
+    args = parser.parse_args()
     
-os.rename(f'{edge_drivers_folder}\\{beta_version}', f'{edge_drivers_folder}\\beta')
-
-os.rename(f'{edge_folder}\\Edge {beta_version}', f'{edge_folder}\\beta')
-
-
-#dev
-url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/dev/Edge+{dev_version}.zip"
-download_file(url, new_edge_folder)
-
-# Download Edge drivers
-url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/dev/{dev_version}.zip"
-download_file(url, new_edge_folder)
-
-#Unzip Edge drivers
-zip_path = os.path.join(new_edge_folder, f"{dev_version}.zip")
-unzip_file(zip_path, edge_drivers_folder)
-
-#Unzip Edge browser
-zip_path = os.path.join(new_edge_folder, f"Edge+{dev_version}.zip")
-unzip_file(zip_path, edge_folder)
-
-
-if os.path.exists(f'{edge_drivers_folder}\\dev'):
-    delete_directory(f'{edge_drivers_folder}\\dev')
-    
-if os.path.exists(f'{edge_folder}\\dev'):
-    delete_directory(f'{edge_folder}\\dev')
-    
-os.rename(f'{edge_drivers_folder}\\{dev_version}', f'{edge_drivers_folder}\\dev')
-
-os.rename(f'{edge_folder}\\Edge {dev_version}', f'{edge_folder}\\dev')
-
-delete_directory(new_edge_folder)
+    # Run the main function with the provided branch
+    main(args.branch)
