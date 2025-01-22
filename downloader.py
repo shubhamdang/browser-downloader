@@ -132,10 +132,17 @@ def main(branch):
 
     # Download and unzip Chrome versions
     for version in chrome_versions_list:
-        url = f"https://ltbrowserdeploy.lambdatest.com/windows/chrome/Google+Chrome+{version}.zip"
+        if branch == 'prod':
+            url = f"https://ltbrowserdeploy.lambdatest.com/windows/chrome/Google+Chrome+{version}.zip"
+        else:
+            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/chrome/Google+Chrome+{version}.zip"
         download_file(url, new_chrome_folder)
 
-        url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Chrome/{version}.zip"
+        if branch == 'prod':
+            url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Chrome/{version}.zip"
+        else:
+            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/drivers/Chrome/{version}.zip"
+
         download_file(url, new_chrome_folder)
 
         unzip_file(os.path.join(new_chrome_folder, f"{version}.zip"), chrome_drivers_folder)
@@ -145,7 +152,11 @@ def main(branch):
 
     # Download and unzip Firefox versions
     for version in firefox_versions_list:
-        url = f"https://ltbrowserdeploy.lambdatest.com/windows/firefox/{version}.zip"
+        if branch == 'prod':
+            url = f"https://ltbrowserdeploy.lambdatest.com/windows/firefox/{version}.zip"
+        else:
+            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/firefox/{version}.zip"
+
         download_file(url, new_firefox_folder)
         unzip_file(os.path.join(new_firefox_folder, f"{version}.zip"), firefox_folder)
 
@@ -153,27 +164,40 @@ def main(branch):
 
     # Download and unzip Edge versions
     for version in edge_versions_list:
-        url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/Edge+{version}.zip"
+        if branch == 'prod':
+            url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/Edge+{version}.zip"
+        else:
+            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/edge/Edge+{version}.zip"
         download_file(url, new_edge_folder)
 
-        url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/{version}.zip"
+        if branch == 'prod':
+            url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/{version}.zip"
+        else:
+            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/drivers/Edge/{version}.zip"
         download_file(url, new_edge_folder)
 
         unzip_file(os.path.join(new_edge_folder, f"{version}.zip"), edge_drivers_folder)
         unzip_file(os.path.join(new_edge_folder, f"Edge+{version}.zip"), edge_folder)
 
     # Handle Edge beta and dev versions
-    handle_edge_versions(edge_versions['beta_versions'][0], 'beta', new_edge_folder, edge_drivers_folder, edge_folder)
-    handle_edge_versions(edge_versions['dev_versions'][0], 'dev', new_edge_folder, edge_drivers_folder, edge_folder)
+    handle_edge_versions(edge_versions['beta_versions'][0], 'beta', new_edge_folder, edge_drivers_folder, edge_folder, branch)
+    handle_edge_versions(edge_versions['dev_versions'][0], 'dev', new_edge_folder, edge_drivers_folder, edge_folder, branch)
 
     delete_directory(new_edge_folder)
 
 # Function to handle Edge beta and dev versions
-def handle_edge_versions(version, version_type, new_edge_folder, edge_drivers_folder, edge_folder):
-    url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/{version_type}/Edge+{version}.zip"
+def handle_edge_versions(version, version_type, new_edge_folder, edge_drivers_folder, edge_folder, branch):
+    if branch == 'prod':
+        url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/{version_type}/Edge+{version}.zip"
+    else:
+        url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/edge/{version_type}/Edge+{version}.zip"
     download_file(url, new_edge_folder)
 
-    url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/{version_type}/{version}.zip"
+    if branch == 'prod':
+        url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/{version_type}/{version}.zip"
+    else:
+        url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/edge/{version_type}/Edge+{version}.zip"
+
     download_file(url, new_edge_folder)
 
     unzip_file(os.path.join(new_edge_folder, f"{version}.zip"), edge_drivers_folder)
