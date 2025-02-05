@@ -131,6 +131,9 @@ def main(branch):
     create_directories([chrome_folder, new_chrome_folder, firefox_folder, new_firefox_folder, edge_folder, new_edge_folder, edge_drivers_folder])
 
     # Download and unzip Chrome versions
+    #TODO Need to Revert Back
+    chrome_versions_list = chrome_versions_list.append('133.0')
+
     for version in chrome_versions_list:
         if branch == 'prod':
             url = f"https://ltbrowserdeploy.lambdatest.com/windows/chrome/Google+Chrome+{version}.zip"
