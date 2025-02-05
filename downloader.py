@@ -182,9 +182,9 @@ def main(branch):
         unzip_file(os.path.join(new_edge_folder, f"{version}.zip"), edge_drivers_folder)
         unzip_file(os.path.join(new_edge_folder, f"Edge+{version}.zip"), edge_folder)
 
-    # Handle Edge beta and dev versions
-    handle_edge_versions(edge_versions['beta_versions'][0], 'beta', new_edge_folder, edge_drivers_folder, edge_folder, branch)
-    handle_edge_versions(edge_versions['dev_versions'][0], 'dev', new_edge_folder, edge_drivers_folder, edge_folder, branch)
+    # # Handle Edge beta and dev versions
+    # handle_edge_versions(edge_versions['beta_versions'][0], 'beta', new_edge_folder, edge_drivers_folder, edge_folder, branch)
+    # handle_edge_versions(edge_versions['dev_versions'][0], 'dev', new_edge_folder, edge_drivers_folder, edge_folder, branch)
 
     delete_directory(new_edge_folder)
 
