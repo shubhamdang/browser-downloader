@@ -152,7 +152,8 @@ def main(branch):
         unzip_file(os.path.join(new_chrome_folder, f"Google+Chrome+{version}.zip"), chrome_folder)
 
     delete_directory(new_chrome_folder)
-
+    
+    firefox_versions_list.append('135.0')
     # Download and unzip Firefox versions
     for version in firefox_versions_list:
         if branch == 'prod':
@@ -165,6 +166,7 @@ def main(branch):
 
     delete_directory(new_firefox_folder)
 
+    edge_versions_list.append('133.0')
     # Download and unzip Edge versions
     for version in edge_versions_list:
         if branch == 'prod':
