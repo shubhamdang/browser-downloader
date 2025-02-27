@@ -5,6 +5,7 @@ import zipfile
 import platform
 import argparse
 
+# Function to determine the Windows version
 def get_windows_version():
     version = platform.system()
     if version == "Windows":
@@ -15,7 +16,7 @@ def get_windows_version():
             return 'win11'
     return None
 
-# Determine the correct API URL based on branch
+# Function to determine the correct API URL based on branch
 def get_api_url(browser, os, branch):
     if branch == 'prod':
         return f"https://api.lambdatest.com/api/v2/capability?grid=selenium&browser={browser}&os={os}"
@@ -25,23 +26,22 @@ def get_api_url(browser, os, branch):
         # For any other branch, default to stage URL
         return f"https://stage-api.lambdatestinternal.com/api/v2/capability?grid=selenium&browser={browser}&os={os}"
 
+# Fetch versions from the LambdaTest API
 def fetch_versions(browser, os, branch):
     url = get_api_url(browser, os, branch)
     response = requests.get(url)
     return response.json()
 
+# Get latest versions from the API
 def get_latest_versions(browser, branch):
     detected_os_version = get_windows_version()
     if detected_os_version is None:
         print("Not running on Windows")
         return None
-
     data = fetch_versions(browser, detected_os_version, branch)
     beta_versions = []
     stable_versions = []
     dev_versions = []
-
-    # Iterate through the versions and extract the latest 5 for each category
     for version in data['versions']:
         if version['channel_type'] == 'beta' and len(beta_versions) < 5:
             beta_versions.append(version['version'])
@@ -49,12 +49,149 @@ def get_latest_versions(browser, branch):
             stable_versions.append(version['version'])
         elif version['channel_type'] == 'dev' and len(dev_versions) < 5:
             dev_versions.append(version['version'])
-
     return {
         'beta_versions': beta_versions,
         'stable_versions': stable_versions,
-        'dev_versions' : dev_versions
+        'dev_versions': dev_versions
     }
+
+# Check if a specific version exists in the deployment URL
+def check_version_exists(base_url, browser, version):
+    if browser == 'chrome':
+        file_name = f"Google Chrome {version}.zip"
+    elif browser == 'edge':
+        file_name = f"Edge {version}.zip"
+    elif browser == 'firefox':
+        file_name = f"{version}.zip"
+    else:
+        return False
+
+    url = f"{base_url}{file_name}"
+    try:
+        response = requests.head(url)  # Use HEAD request to check existence
+        return response.status_code == 200  # 200 means the file exists
+    except requests.exceptions.RequestException:
+        return False
+
+# Generate future versions (+1 to +5)
+def generate_future_versions(latest_version):
+    try:
+        major, minor = map(int, latest_version.split('.'))
+        return [f"{major}.{minor + i}" for i in range(1, 6)]
+    except ValueError:
+        print(f"Invalid version format: {latest_version}")
+        return []
+
+# Main execution logic
+def main(branch):
+    # Base URLs for deployment
+    if branch == 'prod':
+        chrome_base_url = "https://ltbrowserdeploy.lambdatest.com/windows/chrome/"
+        firefox_base_url = "https://ltbrowserdeploy.lambdatest.com/windows/firefox/"
+        edge_base_url = "https://ltbrowserdeploy.lambdatest.com/windows/edge/"
+        chrome_driver_base_url = "https://ltbrowserdeploy.lambdatest.com/windows/drivers/Chrome/"
+        edge_driver_base_url = "https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/"
+    else:  # stage
+        chrome_base_url = "https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/chrome/"
+        firefox_base_url = "https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/firefox/"
+        edge_base_url = "https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/edge/"
+        chrome_driver_base_url = "https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/drivers/Chrome/"
+        edge_driver_base_url = "https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/drivers/Edge/"
+
+    # Fetch latest stable versions from API
+    chrome_versions_api = get_latest_versions('chrome', branch)['stable_versions']
+    firefox_versions_api = get_latest_versions('firefox', branch)['stable_versions']
+    edge_versions_api = get_latest_versions('edge', branch)['stable_versions']
+
+    # Get the latest stable version for each browser
+    chrome_latest = chrome_versions_api[0]
+    firefox_latest = firefox_versions_api[0]
+    edge_latest = edge_versions_api[0]
+
+    # Generate future versions (+1 to +5) for each browser
+    chrome_future_versions = generate_future_versions(chrome_latest)
+    firefox_future_versions = generate_future_versions(firefox_latest)
+    edge_future_versions = generate_future_versions(edge_latest)
+
+    # Filter future versions to include only those that exist in the deployment URLs
+    chrome_versions_list = [v for v in chrome_future_versions if check_version_exists(chrome_base_url, 'chrome', v)]
+    firefox_versions_list = [v for v in firefox_future_versions if check_version_exists(firefox_base_url, 'firefox', v)]
+    edge_versions_list = [v for v in edge_future_versions if check_version_exists(edge_base_url, 'edge', v)]
+
+    # If no future versions are found, fall back to the last 5 stable versions from the API
+    if not chrome_versions_list:
+        chrome_versions_list = chrome_versions_api
+    if not firefox_versions_list:
+        firefox_versions_list = firefox_versions_api
+    if not edge_versions_list:
+        edge_versions_list = edge_versions_api
+
+    print(f"Filtered Chrome Versions: {chrome_versions_list}")
+    print(f"Filtered Firefox Versions: {firefox_versions_list}")
+    print(f"Filtered Edge Versions: {edge_versions_list}")
+
+    # Directories for Chrome, Firefox, and Edge
+    chrome_folder = "G:\\chrome\\"
+    new_chrome_folder = "G:\\New_chrome_browser\\"
+    chrome_drivers_folder = "G:\\drivers\\Chrome\\"
+    firefox_folder = "G:\\firefox\\"
+    new_firefox_folder = "G:\\New_browser_firefox\\"
+    edge_folder = "C:\\Program Files (x86)\\Microsoft\\EdgeCore"
+    new_edge_folder = "G:\\New_browser_edge\\"
+    edge_drivers_folder = "G:\\drivers\\edge"
+
+    # Deleting old directories
+    delete_directory(chrome_folder)
+    delete_directory(chrome_drivers_folder)
+    delete_directory(firefox_folder)
+    delete_directory(edge_folder)
+    delete_directory(edge_drivers_folder)
+
+    # Create necessary directories
+    create_directories([chrome_folder, new_chrome_folder, firefox_folder, new_firefox_folder, edge_folder, new_edge_folder, edge_drivers_folder])
+
+    # Download and unzip Chrome versions
+    for version in chrome_versions_list:
+        download_and_unzip(chrome_base_url, 'chrome', version, new_chrome_folder, chrome_drivers_folder, chrome_folder, branch, chrome_driver_base_url)
+    delete_directory(new_chrome_folder)
+
+    # Download and unzip Firefox versions
+    for version in firefox_versions_list:
+        download_and_unzip(firefox_base_url, 'firefox', version, new_firefox_folder, None, firefox_folder, branch, None)
+    delete_directory(new_firefox_folder)
+
+    # Download and unzip Edge versions
+    for version in edge_versions_list:
+        download_and_unzip(edge_base_url, 'edge', version, new_edge_folder, edge_drivers_folder, edge_folder, branch, edge_driver_base_url)
+    delete_directory(new_edge_folder)
+
+# Helper function to download and unzip files
+def download_and_unzip(base_url, browser, version, temp_folder, drivers_folder, browser_folder, branch, driver_base_url=None):
+    if browser == 'chrome':
+        browser_file_name = f"Google Chrome {version}.zip"
+        driver_file_name = f"{version}.zip"
+    elif browser == 'edge':
+        browser_file_name = f"Edge {version}.zip"
+        driver_file_name = f"{version}.zip"
+    elif browser == 'firefox':
+        browser_file_name = f"{version}.zip"
+        driver_file_name = None
+    else:
+        return
+
+    browser_url = f"{base_url}{browser_file_name}"
+    driver_url = f"{driver_base_url}{driver_file_name}" if driver_base_url and driver_file_name else None
+
+    # Download browser zip
+    browser_zip_path = download_file(browser_url, temp_folder)
+    if browser_zip_path:
+        unzip_file(browser_zip_path, browser_folder)
+
+    # Download driver zip (if applicable)
+    if drivers_folder and driver_url:
+        driver_zip_path = download_file(driver_url, temp_folder)
+        if driver_zip_path:
+            unzip_file(driver_zip_path, drivers_folder)
 
 # Function to create directories if they don't exist
 def create_directories(directories):
@@ -97,125 +234,6 @@ def delete_directory(path):
         print(f"Directory not found: {path}")
     except Exception as e:
         print(f"Error deleting {path}: {e}")
-
-# Main execution logic
-def main(branch):
-    chrome_versions = get_latest_versions('chrome', branch)
-    edge_versions = get_latest_versions('edge', branch)
-    firefox_versions = get_latest_versions('firefox', branch)
-
-    chrome_versions_list = chrome_versions['stable_versions']
-    edge_versions_list = edge_versions['stable_versions']
-    firefox_versions_list = firefox_versions['stable_versions']
-
-    # Directories for Chrome, Firefox, and Edge
-    chrome_folder = "G:\\chrome\\"
-    new_chrome_folder = "G:\\New_chrome_browser\\"
-    chrome_drivers_folder = "G:\\drivers\\Chrome\\"
-
-    firefox_folder = "G:\\firefox\\"
-    new_firefox_folder = "G:\\New_browser_firefox\\"
-
-    edge_folder = "C:\\Program Files (x86)\\Microsoft\\EdgeCore"
-    new_edge_folder = "G:\\New_browser_edge\\"
-    edge_drivers_folder = "G:\\drivers\\edge"
-
-    # Deleting old directories
-    delete_directory(chrome_folder)
-    delete_directory(chrome_drivers_folder)
-    delete_directory(firefox_folder)
-    delete_directory(edge_folder)
-    delete_directory(edge_drivers_folder)
-
-    # Create necessary directories
-    create_directories([chrome_folder, new_chrome_folder, firefox_folder, new_firefox_folder, edge_folder, new_edge_folder, edge_drivers_folder])
-
-    # Download and unzip Chrome versions
-    #TODO Need to Revert Back
-    chrome_versions_list.append('133.0')
-
-    for version in chrome_versions_list:
-        if branch == 'prod':
-            url = f"https://ltbrowserdeploy.lambdatest.com/windows/chrome/Google+Chrome+{version}.zip"
-        else:
-            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/chrome/Google+Chrome+{version}.zip"
-        download_file(url, new_chrome_folder)
-
-        if branch == 'prod':
-            url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Chrome/{version}.zip"
-        else:
-            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/drivers/Chrome/{version}.zip"
-
-        download_file(url, new_chrome_folder)
-
-        unzip_file(os.path.join(new_chrome_folder, f"{version}.zip"), chrome_drivers_folder)
-        unzip_file(os.path.join(new_chrome_folder, f"Google+Chrome+{version}.zip"), chrome_folder)
-
-    delete_directory(new_chrome_folder)
-    
-    firefox_versions_list.append('135.0')
-    # Download and unzip Firefox versions
-    for version in firefox_versions_list:
-        if branch == 'prod':
-            url = f"https://ltbrowserdeploy.lambdatest.com/windows/firefox/{version}.zip"
-        else:
-            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/firefox/{version}.zip"
-
-        download_file(url, new_firefox_folder)
-        unzip_file(os.path.join(new_firefox_folder, f"{version}.zip"), firefox_folder)
-
-    delete_directory(new_firefox_folder)
-
-    edge_versions_list.append('133.0')
-    # Download and unzip Edge versions
-    for version in edge_versions_list:
-        if branch == 'prod':
-            url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/Edge+{version}.zip"
-        else:
-            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/edge/Edge+{version}.zip"
-        download_file(url, new_edge_folder)
-
-        if branch == 'prod':
-            url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/{version}.zip"
-        else:
-            url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/drivers/Edge/{version}.zip"
-        download_file(url, new_edge_folder)
-
-        unzip_file(os.path.join(new_edge_folder, f"{version}.zip"), edge_drivers_folder)
-        unzip_file(os.path.join(new_edge_folder, f"Edge+{version}.zip"), edge_folder)
-
-    # # Handle Edge beta and dev versions
-    # handle_edge_versions(edge_versions['beta_versions'][0], 'beta', new_edge_folder, edge_drivers_folder, edge_folder, branch)
-    # handle_edge_versions(edge_versions['dev_versions'][0], 'dev', new_edge_folder, edge_drivers_folder, edge_folder, branch)
-
-    delete_directory(new_edge_folder)
-
-# Function to handle Edge beta and dev versions
-def handle_edge_versions(version, version_type, new_edge_folder, edge_drivers_folder, edge_folder, branch):
-    if branch == 'prod':
-        url = f"https://ltbrowserdeploy.lambdatest.com/windows/edge/{version_type}/Edge+{version}.zip"
-    else:
-        url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/edge/{version_type}/Edge+{version}.zip"
-    download_file(url, new_edge_folder)
-
-    if branch == 'prod':
-        url = f"https://ltbrowserdeploy.lambdatest.com/windows/drivers/Edge/{version_type}/{version}.zip"
-    else:
-        url = f"https://stage-ltbrowserdeploy.lambdatestinternal.com/windows/edge/{version_type}/Edge+{version}.zip"
-
-    download_file(url, new_edge_folder)
-
-    unzip_file(os.path.join(new_edge_folder, f"{version}.zip"), edge_drivers_folder)
-    unzip_file(os.path.join(new_edge_folder, f"Edge+{version}.zip"), edge_folder)
-
-    if os.path.exists(f'{edge_drivers_folder}\\{version_type}'):
-        delete_directory(f'{edge_drivers_folder}\\{version_type}')
-
-    if os.path.exists(f'{edge_folder}\\{version_type}'):
-        delete_directory(f'{edge_folder}\\{version_type}')
-
-    os.rename(f'{edge_drivers_folder}\\{version}', f'{edge_drivers_folder}\\{version_type}')
-    os.rename(f'{edge_folder}\\Edge {version}', f'{edge_folder}\\{version_type}')
 
 # Entry point
 if __name__ == "__main__":
