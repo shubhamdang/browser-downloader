@@ -114,17 +114,14 @@ def main(branch):
     edge_future_versions = generate_future_versions(edge_latest)
 
     # Filter future versions to include only those that exist in the deployment URLs
-    chrome_versions_list = [v for v in chrome_future_versions if check_version_exists(chrome_base_url, 'chrome', v)]
-    firefox_versions_list = [v for v in firefox_future_versions if check_version_exists(firefox_base_url, 'firefox', v)]
-    edge_versions_list = [v for v in edge_future_versions if check_version_exists(edge_base_url, 'edge', v)]
+    chrome_future_filtered = [v for v in chrome_future_versions if check_version_exists(chrome_base_url, 'chrome', v)]
+    firefox_future_filtered = [v for v in firefox_future_versions if check_version_exists(firefox_base_url, 'firefox', v)]
+    edge_future_filtered = [v for v in edge_future_versions if check_version_exists(edge_base_url, 'edge', v)]
 
-    # If no future versions are found, fall back to the last 5 stable versions from the API
-    if not chrome_versions_list:
-        chrome_versions_list = chrome_versions_api
-    if not firefox_versions_list:
-        firefox_versions_list = firefox_versions_api
-    if not edge_versions_list:
-        edge_versions_list = edge_versions_api
+    # Combine future versions with API versions and sort to get the top 5
+    chrome_versions_list = sorted(set(chrome_future_filtered + chrome_versions_api), reverse=True)[:5]
+    firefox_versions_list = sorted(set(firefox_future_filtered + firefox_versions_api), reverse=True)[:5]
+    edge_versions_list = sorted(set(edge_future_filtered + edge_versions_api), reverse=True)[:5]
 
     print(f"Filtered Chrome Versions: {chrome_versions_list}")
     print(f"Filtered Firefox Versions: {firefox_versions_list}")
