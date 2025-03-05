@@ -77,7 +77,7 @@ def check_version_exists(base_url, browser, version):
 def generate_future_versions(latest_version):
     try:
         major, minor = map(int, latest_version.split('.'))
-        return [f"{major}.{minor + i}" for i in range(1, 6)]
+        return [f"{major+i}.0" for i in range(1, 6)]  # Append ".0" to each version
     except ValueError:
         print(f"Invalid version format: {latest_version}")
         return []
